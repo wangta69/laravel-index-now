@@ -11,7 +11,7 @@ composer require wangta69/laravel-index-now
 
 ## How to Use
 ```
-use Pondol\IndexNow\Jobs;
+use Pondol\IndexNow\Jobs\IndexNow;
 ..........
  IndexNow::dispatch('https://yourdomain/path/file');
 ```
