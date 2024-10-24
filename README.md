@@ -7,7 +7,6 @@
 ## Installation
 ```
 composer require wangta69/laravel-index-now
-php artisan pondol:install-index-now
 ```
 
 ## How to Use
