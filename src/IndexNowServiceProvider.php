@@ -23,11 +23,11 @@ class IndexNowServiceProvider extends ServiceProvider {
   public function register()
   {
 
-    if ($this->app->runningInConsole()) {
-      $this->commands([
-        Console\InstallCommand::class,
-      ]);
-    }
+    // if ($this->app->runningInConsole()) {
+    //   $this->commands([
+    //     Console\InstallCommand::class,
+    //   ]);
+    // }
 
    
 
