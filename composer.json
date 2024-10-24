@@ -1,0 +1,30 @@
+{
+  "name": "wangta69/laravel-index-now",
+  "description": "Admin Mailing system for laravel",
+	"keywords": ["laravel", "index-now"],
+  "homepage": "https://www.onstory.fun/doc/programming/laravel/package.larave-index-now",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pondol",
+      "email": "wangta69@gmail.com",
+      "homepage": "https://www.onstory.fun"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=7.0.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Pondol\\IndexNow\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Pondol\\IndexNow\\IndexNowServiceProvider"
+      ]
+    }
+  }
+}
