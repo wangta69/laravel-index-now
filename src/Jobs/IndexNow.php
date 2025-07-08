@@ -31,7 +31,7 @@ class IndexNow implements ShouldQueue
   {
     $this->naverIndexNow($this->path);
     $this->bingIndexNow($this->path);
-    $this->yandexIndexNow($this->path);
+    // $this->yandexIndexNow($this->path); 지원종료
   }
 
 
