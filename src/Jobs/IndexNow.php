@@ -34,7 +34,7 @@ class IndexNow implements ShouldQueue
     // $this->yandexIndexNow($this->path); 지원종료
   }
 
-
+/*
   private function yandexIndexNow($path) {
     $client = new \GuzzleHttp\Client();
     $endpoint = 'yandex.com/indexnow';
@@ -51,12 +51,14 @@ class IndexNow implements ShouldQueue
     Log::info('Yandex IndexNow Status Code');
     Log::info($response->getStatusCode());
   }
+  */
 
   private function bingIndexNow($path) {
     $client = new \GuzzleHttp\Client();
     $endpoint = 'api.indexnow.org';
     
-    $urlList = [env('APP_URL').'/'.$path];
+    // $urlList = [env('APP_URL').'/'.$path];
+    $urlList = [$path];
     $query = [
       'host'=> env('APP_URL'),
       'key'=> env('INDEXNOW_KEY'),
@@ -74,7 +76,8 @@ class IndexNow implements ShouldQueue
     $query = [
       'key'=> env('INDEXNOW_KEY'),
       'keyLocation'=>env('APP_URL').'/'.env('INDEXNOW_KEY').'.txt',
-      'url'=> env('APP_URL').'/'.$path
+      // 'url'=> env('APP_URL').'/'.$path
+      'url'=> $path
     ];
 
     $endpoint = 'searchadvisor.naver.com/indexnow';
