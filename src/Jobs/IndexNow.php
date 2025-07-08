@@ -17,9 +17,8 @@ class IndexNow implements ShouldQueue
   protected $path;
   public function __construct($path)
   {
-    
-    Log::info('__construct');
-    Log::info($path);
+    // Log::info('__construct');
+    // Log::info($path);
     $this->path = $path;
   }
 
