@@ -1,6 +1,6 @@
 <?php
 
-namespace Pondol\IndexNow\Console;
+namespace Pondol\IndexNow\Console\Commands;
 
 use Illuminate\Console\Command;
 // use Illuminate\Filesystem\Filesystem;
