@@ -28,6 +28,15 @@ class IndexNowServiceProvider extends ServiceProvider {
    */
 	public function boot()
   {
-
+    if (!config()->has('pondol-indexnow')) {
+      $this->publishes([
+        __DIR__ . '/config/pondol-indexnow.php' => config_path('pondol-indexnow.php'),
+      ], 'config');  
+    } 
+      
+    $this->mergeConfigFrom(
+      __DIR__ . '/config/pondol-indexnow.php',
+      'pondol-indexnow'
+    );
   }
 }
