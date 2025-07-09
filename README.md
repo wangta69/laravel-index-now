@@ -25,6 +25,21 @@ IndexNow::dispatch('https://yourdomain/path/file');
 INDEXNOW_KEY=4c1b4369adb97db0a6cef150fb06f7cb
 ```
 
+## config
+- pondol-indexnow.php
+```
+<?php
+return [
+  'log'=>true,
+  'search_engines' => [
+    'bing'=>['enabled'=>true, 'endpoint'=>'api.indexnow.org'],
+    'naver'=>['enabled'=>true, 'endpoint'=>'searchadvisor.naver.com/indexnow'],
+    'yandex'=>['enabled'=>false, 'endpoint'=>'yandex.com/indexnow'],
+  ],
+];
+
+```
+
 ## 지원하는 API
 - api.indexnow.org : for bing, yahoo
 ~~ - yandex.com/indexnow : for Yandex ~~
