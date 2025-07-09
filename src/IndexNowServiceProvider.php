@@ -2,6 +2,7 @@
 namespace Pondol\IndexNow;
 
 use Illuminate\Support\ServiceProvider;
+use Pondol\IndexNow\Console\Commands\InstallCommand;
 
 class IndexNowServiceProvider extends ServiceProvider {
 
@@ -38,5 +39,9 @@ class IndexNowServiceProvider extends ServiceProvider {
       __DIR__ . '/config/pondol-indexnow.php',
       'pondol-indexnow'
     );
+
+    $this->commands([
+      InstallCommand::class
+    ]);
   }
 }
