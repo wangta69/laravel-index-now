@@ -42,7 +42,7 @@ return [
 
 ## 지원하는 API
 - api.indexnow.org : for bing, yahoo
-- ~~  yandex.com/indexnow : for Yandex ~~
+- ~~yandex.com/indexnow : for Yandex~~
 - searchadvisor.naver.com/indexnow : for Naver
 
   
