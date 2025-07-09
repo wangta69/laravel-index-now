@@ -1,4 +1,9 @@
 <?php
 return [
-  'search_engines' => ['bing'=>true, 'naver'=>true, 'yandex'=>false],
+  'log'=>true,
+  'search_engines' => [
+    'bing'=>['enabled'=>true, 'endpoint'=>'api.indexnow.org'],
+    'naver'=>['enabled'=>true, 'endpoint'=>'searchadvisor.naver.com/indexnow'],
+    'yandex'=>['enabled'=>false, 'endpoint'=>'yandex.com/indexnow'],
+  ],
 ];

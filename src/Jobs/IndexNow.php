@@ -39,40 +39,18 @@ class IndexNow implements ShouldQueue
       $this->url = [env('APP_URL').'/'.$this->path];
     }
 
-    if($search_engines['bing']) {
-      $this->bingIndexNow();
+    foreach($search_engines as $key => $value) {
+      if (is_array($value) && isset($value['enabled']) && $value['enabled'] === true) {
+        $response = $this->query($value['endpoint']);
+        if(config('pondol-indexnow.log')) {
+          Log::info($key.' IndexNow Response');
+          Log::info($response->getStatusCode());
+          // Log::info($response->getBody()->getContents());
+        }
+      }
     }
-
-    if($search_engines['naver']) {
-      $this->naverIndexNow();
-    }
-
-    if($search_engines['yandex']) {
-      $this->yandexIndexNow();
-    }
   }
 
-  private function bingIndexNow() {
-    $endpoint = 'api.indexnow.org';
-    $response = $this->query($endpoint);
-    Log::info('Bing IndexNow Status Code');
-    Log::info($response->getStatusCode());
-  }
-
-  private function naverIndexNow() {
-    $endpoint = 'searchadvisor.naver.com/indexnow';
-    $response = $this->query($endpoint);
-    Log::info('Naver IndexNow Status Code');
-    Log::info($response->getStatusCode());
-  }
-
-
-  private function yandexIndexNow() {
-    $endpoint = 'yandex.com/indexnow';
-    $response = $this->query($endpoint);
-    Log::info('Yandex IndexNow Status Code');
-    Log::info($response->getStatusCode());
-  }
 
   private function query($endpoint) {
     $client = new \GuzzleHttp\Client();
