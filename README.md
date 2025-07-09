@@ -39,6 +39,8 @@ return [
 ];
 
 ```
+- key file
+> yourdomain.com/[indexnwo_key].txt 를 위치 시킵니다.
 
 ## 지원하는 API
 - api.indexnow.org : for bing, yahoo
