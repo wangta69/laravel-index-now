@@ -1,3 +1,5 @@
+This library is used in the production of [gilra.kr](https://www.gilra.kr) (Online Fortune Service).
+
 # Laravel IndexNow Package
 
 Laravel에서 **IndexNow API**를 쉽게 사용할 수 있도록 도와주는 패키지입니다.  
