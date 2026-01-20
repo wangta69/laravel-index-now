@@ -1,9 +1,12 @@
 {
   "name": "wangta69/laravel-index-now",
-  "description": "Index-now for laravel",
+  "description": "Index-now & Google Indexing API for Laravel",
   "keywords": [
     "laravel",
-    "index-now"
+    "index-now",
+    "seo",
+    "google-indexing",
+    "search-engine"
   ],
   "homepage": "https://www.onstory.fun/packages/index-now",
   "license": "MIT",
@@ -11,13 +14,14 @@
     {
       "name": "Pondol",
       "email": "wangta69@gmail.com",
-      "homepage": "https://www.onstory.fun"
+      "homepage": "https://www.gilra.kr"
     }
   ],
   "minimum-stability": "stable",
   "require": {
-    "php": ">=7.0.0",
-    "guzzlehttp/guzzle": "^7.9"
+    "php": "^7.4|^8.0",
+    "guzzlehttp/guzzle": "^7.9",
+    "google/apiclient": "^2.15.0"
   },
   "autoload": {
     "psr-4": {
