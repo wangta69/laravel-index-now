@@ -1,47 +1,73 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Pondol\IndexNow;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Pondol\IndexNow\Console\Commands\DoctorCommand;
 use Pondol\IndexNow\Console\Commands\InstallCommand;
+use Pondol\IndexNow\Console\Commands\SubmitCommand;
+use Pondol\IndexNow\Http\Controllers\KeyVerificationController;
+use Pondol\IndexNow\Services\GoogleIndexingClient;
+use Pondol\IndexNow\Services\IndexNowClient;
+use Pondol\IndexNow\Services\IndexNowService;
 
-class IndexNowServiceProvider extends ServiceProvider {
+class IndexNowServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->mergeConfigFrom(
+            __DIR__.'/config/pondol-indexnow.php',
+            'pondol-indexnow'
+        );
 
-  /**
-   * Where the route file lives, both inside the package and in the app (if overwritten).
-   *
-   * @var string
-   */
+        $this->app->singleton(IndexNowClient::class);
+        $this->app->singleton(GoogleIndexingClient::class);
+        $this->app->singleton(IndexNowService::class, function ($app) {
+            return new IndexNowService(
+                indexNowClient: $app->make(IndexNowClient::class),
+                googleClient: $app->make(GoogleIndexingClient::class),
+            );
+        });
 
-	/**
-   * Register any application services.
-   *
-   * @return void
-   */
-  public function register()
-  {
+        $this->app->alias(IndexNowService::class, 'pondol-indexnow');
+    }
 
-  }
+    public function boot(): void
+    {
+        $this->publishes([
+            __DIR__.'/config/pondol-indexnow.php' => config_path('pondol-indexnow.php'),
+        ], ['pondol-indexnow-config', 'config']);
 
-	/**
-   * Bootstrap any application services.
-   *
-   * @return void
-   */
-	public function boot()
-  {
-    if (!config()->has('pondol-indexnow')) {
-      $this->publishes([
-        __DIR__ . '/config/pondol-indexnow.php' => config_path('pondol-indexnow.php'),
-      ], 'config');  
-    } 
-      
-    $this->mergeConfigFrom(
-      __DIR__ . '/config/pondol-indexnow.php',
-      'pondol-indexnow'
-    );
+        $this->registerKeyVerificationRoute();
 
-    $this->commands([
-      InstallCommand::class
-    ]);
-  }
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                InstallCommand::class,
+                DoctorCommand::class,
+                SubmitCommand::class,
+            ]);
+        }
+    }
+
+    protected function registerKeyVerificationRoute(): void
+    {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        if (! (bool) config('pondol-indexnow.auto_serve_key', true)) {
+            return;
+        }
+
+        $key = trim((string) config('pondol-indexnow.key', ''));
+        if ($key === '') {
+            return;
+        }
+
+        Route::get('/'.ltrim($key, '/').'.txt', KeyVerificationController::class)
+            ->name('pondol-indexnow.key-verification');
+    }
 }

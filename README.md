@@ -7,8 +7,25 @@ This library is successfully used in production at **[gilra.kr](https://www.gilr
 
 ---
 
-Laravel에서 **IndexNow API**와 **Google Indexing API**를 쉽고 통합적으로 사용할 수 있도록 도와주는 패키지입니다.  
-콘텐츠 생성·수정·삭제 시 검색엔진(Google, Bing, Naver 등)에 URL을 즉시 전송하여 **빠른 색인(Fast Indexing)**을 유도합니다 ⚡
+Laravel에서 **IndexNow API** (Bing, Naver, Yandex, Seznam, Yep, Amazon 등)와 **Google Indexing API**를 통합 지원하는 초경량 패키지입니다.  
+외부 SDK(`google/apiclient`) 없이 **순수 Laravel `Http` 파사드와 OpenSSL**만으로 동작하며, Facade·Eloquent Trait·Artisan 진단 도구까지 모두 제공합니다.
+
+---
+
+## Documentation
+
+상세한 설정 방법과 검색엔진별 주의사항은 아래 문서를 참고하세요:
+
+- 📘 **[Google Indexing API Setup Guide](docs/google-indexing.md)** — Google Cloud 프로젝트, JSON 키 발급, Search Console 권한 설정(403 해결법)
+- 🌏 **[Search Engines & Naver Guide](docs/search-engines.md)** — 네이버 서치어드바이저 주의사항, 글로벌 IndexNow 참여 엔진 목록
+- 🛠️ **[Advanced Usage Guide](docs/advanced-usage.md)** — `Indexable` Trait 고급 패턴, Events 알림 연동, 멀티 도메인, Scheduler
+
+---
+
+## Requirements
+
+- PHP `^8.2` (with `ext-openssl`, `ext-json`)
+- Laravel `^11.0 | ^12.0 | ^13.0`
 
 ---
 
@@ -19,154 +36,159 @@ composer require wangta69/laravel-index-now
 php artisan pondol:install-index-now
 ```
 
+설치 마법사가 실행되면:
+
+1. `config/pondol-indexnow.php` 설정 파일을 생성합니다.
+2. `INDEXNOW_KEY`가 없으면 32자 랜덤 키를 자동 생성해 `.env`에 등록합니다.
+3. 기본값(`auto_serve_key = true`)으로 동작하므로 `public/{key}.txt` 파일을 직접 만들지 않아도 `https://yourdomain.com/{key}.txt` 요청에 자동 응답합니다.
+4. 실서버(`APP_URL`이 실제 도메인인 경우)에서는 홈페이지 URL로 **최초 활성화 핑(Initial Ping)**을 바로 전송해 Bing/Naver에 IndexNow를 즉시 등록할 수 있습니다. (`--init` 옵션으로 질문 없이 즉시 전송 가능)
+
+### Bing Webmaster Tools에 "IndexNow 미설정"으로 표시될 때
+
+IndexNow는 최초 1건 이상의 URL이 제출되어야 검색엔진이 키 파일을 검증하고 활성화됩니다. 실서버 배포 후 아래 명령어로 홈페이지 URL을 1회 전송하면 활성화가 완료됩니다:
+
+```bash
+php artisan indexnow:submit / --sync
+```
+
+설치 후 아래 명령어로 설정 상태를 한 번에 점검할 수 있습니다:
+
+```bash
+php artisan indexnow:doctor
+```
+
 ---
 
 ## Configuration
 
-`config/pondol-indexnow.php` 파일을 통해 각 검색엔진 사용 여부를 설정할 수 있습니다.
+`.env` 파일 예시:
 
-```php
-<?php
+```env
+INDEXNOW_ENABLED=true
+INDEXNOW_ENVIRONMENTS=production
+INDEXNOW_KEY=your_32_char_key_here
+INDEXNOW_AUTO_SERVE_KEY=true
 
-return [
-    'log' => true,
+# Queue 설정
+INDEXNOW_QUEUE_ENABLED=true
+INDEXNOW_QUEUE_NAME=default
 
-    // ✅ Google Indexing API 설정 (New)
-    'google' => [
-        'enabled' => true, // true로 설정 시 구글 전송 활성화
-        'key_file' => 'google-api-key.json', // storage/app 폴더 내의 파일명
-        'action' => 'URL_UPDATED' // or 'URL_DELETED'
-    ],
-
-    // ✅ IndexNow 설정 (Bing, Naver 등)
-    'search_engines' => [
-        'bing' => ['enabled' => true, 'endpoint' => 'api.indexnow.org'],
-        'naver' => ['enabled' => true, 'endpoint' => 'searchadvisor.naver.com/indexnow'],
-        'yandex' => ['enabled' => false, 'endpoint' => 'yandex.com/indexnow'],
-    ],
-];
+# Google Indexing API (사용 시 true)
+INDEXNOW_GOOGLE_ENABLED=false
+INDEXNOW_GOOGLE_KEY_FILE=google-api-key.json
 ```
+
+> **로컬 오발송 방지:** `environments` 기본값이 `['production']`이므로 로컬/테스트 환경에서는 실수로 검색엔진에 URL이 전송되지 않습니다.
 
 ---
 
 ## How to Use
 
-URL을 전송하는 방법은 매우 간단합니다.
+### 1. Facade 사용 (권장)
+
+```php
+use Pondol\IndexNow\Facades\IndexNow;
+
+// 단건 / 다건 / 상대경로 모두 지원
+IndexNow::update('https://yourdomain.com/posts/1');
+IndexNow::update(['/posts/1', '/posts/2']);
+
+// 삭제 알림 (Google Indexing API에 URL_DELETED 전송)
+IndexNow::delete('/posts/1');
+
+// 큐를 타지 않고 즉시 실행 + 결과 확인
+$results = IndexNow::now()->update('/posts/1');
+
+// 로컬 환경에서 강제 테스트
+$results = IndexNow::force()->now()->update('https://yourdomain.com/posts/1');
+```
+
+### 2. Eloquent 모델 자동 색인 (`Indexable` Trait)
+
+모델에 `Indexable` Trait을 붙이면 `created`, `updated`, `deleted`, `restored` 이벤트에 맞춰 자동으로 색인을 요청합니다.  
+👉 자세한 활용법은 **[Advanced Usage Guide](docs/advanced-usage.md)**를 참고하세요.
+
+```php
+use Illuminate\Database\Eloquent\Model;
+use Pondol\IndexNow\Enums\IndexingAction;
+use Pondol\IndexNow\Traits\Indexable;
+
+class Post extends Model
+{
+    use Indexable;
+
+    public function getIndexNowUrl(): string
+    {
+        return route('posts.show', $this);
+    }
+
+    public function shouldIndexNow(IndexingAction $action): bool
+    {
+        return $this->status === 'published';
+    }
+
+    public function indexNowWatchColumns(): array
+    {
+        return ['title', 'content', 'status'];
+    }
+}
+```
+
+### 3. 기존 Queue Job 방식 (하위 호환)
 
 ```php
 use Pondol\IndexNow\Jobs\IndexNow;
 
-// 구글과 IndexNow(Bing, Naver) 모두에게 전송됩니다 (Config 설정에 따라)
 IndexNow::dispatch('https://yourdomain.com/path/file');
 ```
 
-> ✅ Queue(Job) 기반으로 동작하므로 `queue:work` 실행이 필요합니다.
-
----
-
-## 🚀 Google Indexing API 설정 가이드 (중요)
-
-구글은 별도의 인증 절차가 필요합니다. 아래 4단계를 반드시 진행해야 합니다.
-
-### 1️⃣ Google Cloud 프로젝트 및 API 활성화
-
-1. [Google Cloud Console](https://console.cloud.google.com/)에 접속하여 새 프로젝트를 생성합니다.
-2. 좌측 메뉴에서 **API 및 서비스 > 라이브러리**로 이동합니다.
-3. 검색창에 **`Web Search Indexing API`**를 검색합니다.
-4. **사용(Enable)** 버튼을 눌러 API를 활성화합니다. **(필수)**
-
-### 2️⃣ 서비스 계정 생성 및 키 다운로드
-
-1. **IAM 및 관리자 > 서비스 계정**으로 이동합니다.
-2. **서비스 계정 만들기**를 클릭합니다.
-   - 이름: 원하는 대로 입력 (예: `indexing-bot`)
-   - 역할(Role): **소유자(Owner)** 선택 (권장)
-3. 생성된 서비스 계정 목록에서 **이메일 주소**(`~@~.iam.gserviceaccount.com`)를 복사해 둡니다. (3단계에서 사용)
-4. 해당 계정의 **키(Keys)** 탭으로 이동합니다.
-5. **키 추가 > 새 키 만들기 > JSON**을 선택하여 다운로드합니다.
-
-### 3️⃣ 구글 서치 콘솔(Search Console) 권한 부여
-
-⚠️ **이 단계를 건너뛰면 `403 Forbidden` 에러가 발생합니다.**
-
-1. [구글 서치 콘솔](https://search.google.com/search-console)에 접속하여 연동할 사이트를 선택합니다.
-2. **설정(Settings) > 사용자 및 권한(Users and permissions)**으로 이동합니다.
-3. **사용자 추가(Add User)**를 클릭합니다.
-4. 아까 복사한 **서비스 계정 이메일**을 입력합니다.
-5. 권한을 반드시 **소유자(Owner)**로 설정하고 추가합니다.
-
-### 4️⃣ 키 파일 업로드 및 설정
-
-1. 다운로드한 JSON 파일의 이름을 `google-api-key.json` (또는 원하는 이름)으로 변경합니다.
-2. 라라벨 프로젝트의 **`storage/app/`** 폴더 안에 파일을 업로드합니다.
-3. `config/pondol-indexnow.php` 파일에서 `google.enabled`를 `true`로 변경하고 파일명을 확인합니다.
-
----
-
-## 🌏 IndexNow Key 설정 가이드 (Bing & Naver)
-
-IndexNow는 **도메인 소유 증명용 Key 파일**을 요구합니다. 하나의 Key로 Bing과 Naver에서 공통으로 사용할 수 있습니다.
-
-### 1️⃣ Key 발급 (Bing)
-
-1. [Bing IndexNow 페이지](https://www.bing.com/indexnow/getstarted) 접속
-2. `Generate API Key` 클릭하여 Key 문자열 복사
-
-### 2️⃣ Key 파일 생성 및 업로드
-
-웹 루트(public) 폴더에 Key 값과 동일한 이름의 텍스트 파일을 생성합니다.
-
-- 파일명: `your_key_string.txt`
-- 파일 내용: `your_key_string`
-- 위치: `/public/` 폴더
-
-### 3️⃣ .env 설정
-
-```env
-INDEXNOW_KEY=your_key_string_here
-```
-
-### 4️⃣ 확인
-
-브라우저에서 `https://yourdomain.com/{INDEXNOW_KEY}.txt` 접속 시 내용이 보여야 합니다.
-
-> **Naver 설정:** Bing에서 발급받은 Key 파일을 그대로 두시고, [네이버 서치어드바이저](https://searchadvisor.naver.com)에 사이트 소유 확인만 되어 있으면 자동으로 연동됩니다.
-
----
-
-## 지원 API
-
-- ✅ **Google** (Indexing API)
-- ✅ **Bing / Yahoo** (IndexNow)
-- ✅ **Naver** (IndexNow)
-- ❌ Yandex (설정 가능하나 기본값 비활성)
-
----
-
-## 실행하기 (Queue Worker)
-
-전송 속도 저하를 막기 위해 비동기 처리를 권장합니다.
-
-### 추천: 비동기식 (Database Queue)
-
-`.env` 파일 설정:
-
-```env
-QUEUE_CONNECTION=database
-```
-
-Queue 실행 (Supervisor 등을 이용해 백그라운드 실행 권장):
+### 4. Artisan CLI 도구
 
 ```bash
-php artisan queue:work
+# 설정, 키 서빙 URL, Google OAuth 토큰 자가 진단
+php artisan indexnow:doctor
+
+# 특정 URL 수동 전송
+php artisan indexnow:submit https://yourdomain.com/posts/1 --sync
+
+# sitemap.xml 전체 일괄 전송 (sitemapindex 지원)
+php artisan indexnow:submit --sitemap=https://yourdomain.com/sitemap.xml
 ```
 
-### 참고: 동기식 (개발 테스트용)
+---
 
-즉시 실행되어 결과를 바로 확인할 수 있지만, 사용자 응답이 느려질 수 있습니다.
+## Quick Setup for Search Engines
 
-```env
-QUEUE_CONNECTION=sync
+- **IndexNow (Bing, Naver, Yandex 등):** `php artisan pondol:install-index-now` 실행만으로 키 생성 및 라우트 서빙이 자동 설정됩니다. 별도 사이트 등록 없이도 API 전송이 가능하지만, 네이버 색인 현황 확인과 사이트맵 제출을 위해 서치어드바이저 등록을 권장합니다. 👉 **[Naver & Search Engines Guide](docs/search-engines.md)**
+- **Google Indexing API:** 서비스 계정 JSON 키를 `storage/app/google-api-key.json`에 넣고 Search Console 소유자 권한을 부여한 뒤 `INDEXNOW_GOOGLE_ENABLED=true`로 설정하세요. 👉 **[Google Setup Guide](docs/google-indexing.md)**
+
+---
+
+## Events
+
+전송 결과에 따라 이벤트가 발행되므로 Slack 알림이나 실패 로깅을 손쉽게 연결할 수 있습니다.
+
+- `Pondol\IndexNow\Events\IndexingSucceeded` (`$event->result`, `$event->action`)
+- `Pondol\IndexNow\Events\IndexingFailed` (`$event->result`, `$event->action`)
+
+---
+
+## Upgrading from v1.x
+
+- `composer.json` 요구사항이 `PHP ^8.2`, `Laravel ^11.0|^12.0|^13.0`으로 상향되었으며 `google/apiclient` 의존성이 제거되었습니다.
+- 기존 `Pondol\IndexNow\Jobs\IndexNow::dispatch($url)` 코드는 수정 없이 그대로 호환됩니다.
+- 신규 옵션(`enabled`, `environments`, `key`, `auto_serve_key`, `queue`)을 사용하려면 설정 파일을 다시 퍼블리시하세요:
+  ```bash
+  php artisan vendor:publish --tag=pondol-indexnow-config --force
+  ```
+
+---
+
+## Testing
+
+```bash
+composer install
+vendor/bin/phpunit
 ```
 
 ---
